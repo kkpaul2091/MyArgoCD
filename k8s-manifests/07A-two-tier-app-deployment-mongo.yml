@@ -19,7 +19,7 @@ spec:
                  secretName: mongo-secret
         containers:
         - name: myschool-v3
-          image: kanu17/my-school-pupil:3.0.0
+          image: kanu17/my-school-pupil:2.0.0
           envFrom:
            - secretRef:
                name: mongo-secret 
