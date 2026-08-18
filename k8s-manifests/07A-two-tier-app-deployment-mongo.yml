@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: myschool-deployment-v3
+spec:
+    
+    replicas: 1
+    selector:
+      matchLabels:
+        app: myschool-v3
+    template:
+      metadata:
+        labels:
+          app: myschool-v3
+      spec:
+        volumes:
+           - name: secret-volume
+             secret:
+                 secretName: mongo-secret
+        containers:
+        - name: myschool-v3
+          image: kanu17/my-school-pupil:3.0.0
+          envFrom:
+           - secretRef:
+               name: mongo-secret 
+          imagePullPolicy: Always 
+          ports:
+          - containerPort: 8002
+          volumeMounts:
+           - name: secret-volume
+             readOnly: true
+             mountPath: "/etc/secret-volume"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myschool-service-v3
+  labels:
+    app: myschool-v3
+  annotations:
+#Important Note:  Need to add health check path annotations in service level if we are planning to use multiple targets in a load balancer    
+    alb.ingress.kubernetes.io/healthcheck-path: /pupil
+spec:
+  type: NodePort
+  selector:
+    app: myschool-v3
+  ports:
+    - port: 80
+      targetPort: 8002

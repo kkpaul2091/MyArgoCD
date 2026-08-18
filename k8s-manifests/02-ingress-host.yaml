@@ -1,0 +1,104 @@
+# Annotations Reference: https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/ingress/annotations/
+  apiVersion: networking.k8s.io/v1
+  kind: Ingress
+  metadata:
+    name: ingress-myschool
+    annotations:
+      # Load Balancer Name
+      alb.ingress.kubernetes.io/load-balancer-name: myschoolalb
+      # Ingress Core Settings
+      #kubernetes.io/ingress.class: "alb" (OLD INGRESS CLASS NOTATION - STILL WORKS BUT RECOMMENDED TO USE IngressClass Resource)
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      # Health Check Settings
+      alb.ingress.kubernetes.io/healthcheck-path: /pupil
+      alb.ingress.kubernetes.io/healthcheck-protocol: HTTP 
+      alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+      #Important Note:  Need to add health check path annotations in service level if we are planning to use multiple targets in a load balancer    
+      alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+      alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+      alb.ingress.kubernetes.io/success-codes: '200'
+      alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+      alb.ingress.kubernetes.io/unhealthy-threshold-count: '2' 
+      alb.ingress.kubernetes.io/actions.custom-student-404: >
+       {
+        "Type": "fixed-response",
+        "FixedResponseConfig": {
+          "StatusCode": "404",
+          "ContentType": "text/html",
+          "MessageBody": "<html><body><h1>404</h1><p>My School Student Alert:Page not found </p></body></html>"
+        }
+       }
+
+      alb.ingress.kubernetes.io/actions.custom-pupil-404: >
+       {
+        "Type": "fixed-response",
+        "FixedResponseConfig": {
+          "StatusCode": "404",
+          "ContentType": "text/html",   
+          "MessageBody": "<html><body><h1>404</h1><p>My School Pupil Alert:Page not found </p></body></html>"       
+
+        }
+       }
+        
+      
+
+      alb.ingress.kubernetes.io/actions.custom-view-404: >
+       {
+        "Type": "fixed-response",
+        "FixedResponseConfig": {
+          "StatusCode": "404",
+          "ContentType": "text/html",
+          "MessageBody": "<html><body><h1>404</h1><p>My School View Alert:Page not found </p></body></html>"
+        }
+       }
+      # SSL Settings-ALB supports only HTTP and HTTPS listeners ✅ 80, 8080, 443, 8443, etc.
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTPS":8443}, {"HTTP":80}]'
+      alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:489661996455:certificate/71642db9-b838-4418-b167-54a8c67e191b
+      #alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-southeast-2:489661996455:certificate/74f09971-d754-4ace-9b17-f0b982f0e320
+      #alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-1-2017-01 #Optional (Picks default if not used)  
+      # SSL Redirect Setting
+      alb.ingress.kubernetes.io/ssl-redirect: '443'  
+      # External DNS - For creating a Record Set in Route53
+      external-dns.alpha.kubernetes.io/hostname: default01.mremasrejoy.com
+       # Enable access logs
+      alb.ingress.kubernetes.io/load-balancer-attributes: >
+        access_logs.s3.enabled=true,
+        access_logs.s3.bucket=kkp-eks-test,
+        access_logs.s3.prefix=eks-alb
+  spec:
+    ingressClassName: my-aws-ingress-class   # Ingress Class                         
+    rules:         
+      - host: pupil.mremasrejoy.com
+        http:
+          paths: 
+            - path: /pupil
+              pathType: Prefix
+              backend:
+                service:
+                  name: myschool-service-v3
+                  port: 
+                    number: 80
+            - path: /pupil_add_student
+              pathType: Prefix
+              backend:
+                service:
+                  name: myschool-service-v3
+                  port:
+                    number: 80
+            - path: /pupil_delete_student
+              pathType: Prefix
+              backend:
+                service:
+                  name: myschool-service-v3
+                  port:
+                    number: 80
+               # ✅ DEFAULT BACKEND (catch‑all)
+            - path: /*              
+              pathType: ImplementationSpecific
+              backend:
+                service:
+                  name: custom-pupil-404
+                  port:
+                    name: use-annotation
+
+      
