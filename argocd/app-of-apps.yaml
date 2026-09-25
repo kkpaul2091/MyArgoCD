@@ -4,7 +4,7 @@ metadata:
   name: app-of-apps
   namespace: argocd
 spec:
-  project: default
+  project: my-school-apps
   source:
     repoURL: https://github.com/kkpaul2091/MyArgoCD.git
     targetRevision: HEAD
